@@ -3,6 +3,12 @@
 #define BUF_SZ 256
 char commands[BUF_SZ][BUF_SZ];
 
+
+enum{
+    AAA,
+    BBB
+};
+
 int splitCommands(char command[BUF_SZ]) {  
 	int num = 0;
 	int i, j;
@@ -24,15 +30,18 @@ int splitCommands(char command[BUF_SZ]) {
 		++num;
 	}
 
-	return num;
+	return 0;
 }
 
+int a(){
+    return BBB;
+}
 int main(){
     // char s[] = "ps | qe";
     // int a = splitCommands(s);
     // printf("%s",commands[4]);
     // return 0;
-    FILE*p = freopen("q.txt","r",stdin);
-    printf("%d",p);
+    int x = a();
+    printf("%d",x);
     return 0;
 }

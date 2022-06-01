@@ -143,51 +143,51 @@ int main() {
 	}
 }
 
-int isCommandExist(const char* command) {  
-	if (command == NULL || strlen(command) == 0) return FALSE;
+// int isCommandExist(const char* command) {  
+// 	if (command == NULL || strlen(command) == 0) return FALSE;
 
-	int result = TRUE;
+// 	int result = TRUE;
 	
-	int fds[2];
-	if (pipe(fds) == -1) {
-		result = FALSE;
-	} else {
+// 	int fds[2];
+// 	if (pipe(fds) == -1) {
+// 		result = FALSE;
+// 	} else {
 
-		int inFd = dup(STDIN_FILENO);
-		int outFd = dup(STDOUT_FILENO);
+// 		int inFd = dup(STDIN_FILENO);
+// 		int outFd = dup(STDOUT_FILENO);
 
-		pid_t pid = vfork();
-		if (pid == -1) {
-			result = FALSE;
-		} else if (pid == 0) {
+// 		pid_t pid = vfork();
+// 		if (pid == -1) {
+// 			result = FALSE;
+// 		} else if (pid == 0) {
 
-			close(fds[0]);
-			dup2(fds[1], STDOUT_FILENO);
-			close(fds[1]);
+// 			close(fds[0]);
+// 			dup2(fds[1], STDOUT_FILENO);
+// 			close(fds[1]);
 
-			char tmp[BUF_SZ];
-			sprintf(tmp, "command -v %s", command);
-			system(tmp);
-			exit(1);
-		} else {
-			waitpid(pid, NULL, 0);
+// 			char tmp[BUF_SZ];
+// 			sprintf(tmp, "command -v %s", command);
+// 			system(tmp);
+// 			exit(1);
+// 		} else {
+// 			waitpid(pid, NULL, 0);
 
-			close(fds[1]);
-			dup2(fds[0], STDIN_FILENO);
-			close(fds[0]);
+// 			close(fds[1]);
+// 			dup2(fds[0], STDIN_FILENO);
+// 			close(fds[0]);
 
-			if (getchar() == EOF) {  
-				result = FALSE;
-			}
+// 			if (getchar() == EOF) {  
+// 				result = FALSE;
+// 			}
 			
 
-			dup2(inFd, STDIN_FILENO);
-			dup2(outFd, STDOUT_FILENO);
-		}
-	}
+// 			dup2(inFd, STDIN_FILENO);
+// 			dup2(outFd, STDOUT_FILENO);
+// 		}
+// 	}
 
-	return result;
-}
+// 	return result;
+// }
 
 void getUsername() {  
 	struct passwd* pwd = getpwuid(getuid());
@@ -279,17 +279,16 @@ int callCommandWithPipe(int low, int high) {
 	if (pipe(fds) == -1) {
 		return ERROR_PIPE;
 	}
-	int result = RESULT_NORMAL;
+	// int result = RESULT_NORMAL;
 	pid_t pid = vfork();
 	if (pid == -1) {
-		result = ERROR_FORK;
+		return ERROR_FORK;
 	} else if (pid == 0) {  
 		close(fds[0]);
 		dup2(fds[1], STDOUT_FILENO);  
 		close(fds[1]);
 		
-		result = callCommandWithRedi(low, pipeIdx);
-		exit(result);
+		exit(callCommandWithRedi(low, pipeIdx));
 	} else {  
 		int status;
 		waitpid(pid, &status, 0);
@@ -306,22 +305,22 @@ int callCommandWithPipe(int low, int high) {
 			}
 			printf("%s", info);  
 			
-			result = exitCode;
+			return exitCode;
 		} else if (pipeIdx+1 < high){
 			close(fds[1]);
 			dup2(fds[0], STDIN_FILENO);  
 			close(fds[0]);
-			result = callCommandWithPipe(pipeIdx+1, high);  
+			return callCommandWithPipe(pipeIdx+1, high);  
 		}
 	}
 
-	return result;
+	// return result;
 }
 
 int callCommandWithRedi(int low, int high) {  
-	if (!isCommandExist(commands[low])) {  
-		return ERROR_COMMAND;
-	}	
+	// if (!isCommandExist(commands[low])) {  
+	// 	return ERROR_COMMAND;
+	// }	
 
 
 	int inNum = 0, outNum = 0;
@@ -351,7 +350,7 @@ int callCommandWithRedi(int low, int high) {
 	} else if (outNum > 1) {  
 		return ERROR_MANY_OUT;
 	}
-    
+
 	if (inNum == 1) {
 		FILE* fp = fopen(inFile, "r");
 		if (fp == NULL)  
@@ -361,10 +360,10 @@ int callCommandWithRedi(int low, int high) {
 	}
 	
 
-	int result = RESULT_NORMAL;
+	// int result = RESULT_NORMAL;
 	pid_t pid = vfork();
 	if (pid == -1) {
-		result = ERROR_FORK;
+		return ERROR_FORK;
 	} else if (pid == 0) {
 
 		if (inNum == 1)
@@ -377,6 +376,7 @@ int callCommandWithRedi(int low, int high) {
 		for (int i=low; i<endIdx; ++i)
 			comm[i] = commands[i];
 		comm[endIdx] = NULL;
+
 		execvp(comm[low], comm+low);
 		exit(errno);  
 	} else {
@@ -386,11 +386,11 @@ int callCommandWithRedi(int low, int high) {
 
 		if (err) {  
 			printf("\e[31;1mError: %s\n\e[0m", strerror(err));
+            return ERROR_COMMAND;
 		}
 	}
 
-
-	return result;
+	return RESULT_NORMAL;
 }
 
 int callCd(int commandNum) {  
