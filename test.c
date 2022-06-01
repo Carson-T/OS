@@ -356,7 +356,7 @@ int callCommandWithRedi(int low, int high) {
 		return ERROR_FORK;
 	} else if (pid == 0) {
 
-		if (inNum == 1)
+		if (inNum == 1){
             FILE* fp = fopen(inFile, "r");
 		    if (fp == NULL)  
                 fclose(fp);
@@ -365,6 +365,7 @@ int callCommandWithRedi(int low, int high) {
                 fclose(fp);
 			    freopen(inFile, "r", stdin);
             }
+        }
 		if (outNum == 1)
 			freopen(outFile, "w", stdout);
 
@@ -378,8 +379,8 @@ int callCommandWithRedi(int low, int high) {
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
-		if (WIFEXITED(status)) {
-		    int err = WEXITSTATUS(status);  
+		int err = WEXITSTATUS(status);  
+        if(err){
             if(err == ERROR_FILE_NOT_EXIST)
                 return err;
             else{

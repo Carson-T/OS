@@ -34,7 +34,13 @@ int splitCommands(char command[BUF_SZ]) {
 }
 
 int a(){
-    return BBB;
+    pid_t pid = fork();
+    if(pid == 0){
+        exit(0);
+    }
+    else{
+        
+    }
 }
 int main(){
     char s[100];
