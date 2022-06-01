@@ -358,9 +358,10 @@ int callCommandWithRedi(int low, int high) {
 
 		if (inNum == 1){
             FILE* fp = fopen(inFile, "r");
-		    if (fp == NULL)  
+		    if (fp == NULL){
                 fclose(fp);
 			    exit(ERROR_FILE_NOT_EXIST);
+            }
             else{
                 fclose(fp);
 			    freopen(inFile, "r", stdin);
