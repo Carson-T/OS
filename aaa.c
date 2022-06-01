@@ -37,11 +37,13 @@ int a(){
     return BBB;
 }
 int main(){
-    // char s[] = "ps | qe";
+    char s[100];
     // int a = splitCommands(s);
     // printf("%s",commands[4]);
     // return 0;
-    int x = a();
-    printf("%d",x);
+    fgets(s,100,stdin);
+    if(AAA==0){
+        printf("%d",strcmp(s,""));
+    }
     return 0;
 }

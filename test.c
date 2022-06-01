@@ -259,7 +259,7 @@ int callCommand(int commandNum) {
 }
 
 int callCommandWithPipe(int low, int high) {  
-	if (low >= high) return RESULT_NORMAL;
+	// if (low >= high) return RESULT_NORMAL;
 
 	int pipeIdx = -1;
 	for (int i=low; i<high; ++i) {
@@ -268,60 +268,57 @@ int callCommandWithPipe(int low, int high) {
 			break;
 		}
 	}
+
 	if (pipeIdx == -1) {  
 		return callCommandWithRedi(low, high);
 	} else if (pipeIdx+1 == high) {  
 		return ERROR_PIPE_MISS_PARAMETER;
+	} else if (pipeIdx+1 < high){
+
+        int fds[2];
+        if (pipe(fds) == -1) {
+            return ERROR_PIPE;
+        }
+        // int result = RESULT_NORMAL;
+        pid_t pid =  fork();
+        if (pid == -1) {
+            return ERROR_FORK;
+        } else if (pid == 0) {  
+            close(fds[0]);
+            dup2(fds[1], STDOUT_FILENO);  
+            close(fds[1]);
+            
+            exit(callCommandWithRedi(low, pipeIdx));
+        } else {  
+            int status;
+            waitpid(pid, &status, 0);
+            int exitCode = WEXITSTATUS(status);
+            
+            if (exitCode != RESULT_NORMAL) {  
+                char line[BUF_SZ];
+                close(fds[1]);
+                dup2(fds[0], STDIN_FILENO);  
+                close(fds[0]);
+                while(fgets(line, BUF_SZ, stdin) != NULL) {  
+                    fprintf(stderr,"%s", line);  
+                }
+                
+                return exitCode;
+            } else if (pipeIdx+1 < high){
+                close(fds[1]);
+                dup2(fds[0], STDIN_FILENO);  
+                close(fds[0]);
+                return callCommandWithPipe(pipeIdx+1, high);  
+            }
+        }
 	}
 
-
-	int fds[2];
-	if (pipe(fds) == -1) {
-		return ERROR_PIPE;
-	}
-	// int result = RESULT_NORMAL;
-	pid_t pid = vfork();
-	if (pid == -1) {
-		return ERROR_FORK;
-	} else if (pid == 0) {  
-		close(fds[0]);
-		dup2(fds[1], STDOUT_FILENO);  
-		close(fds[1]);
-		
-		exit(callCommandWithRedi(low, pipeIdx));
-	} else {  
-		int status;
-		waitpid(pid, &status, 0);
-		int exitCode = WEXITSTATUS(status);
-		
-		if (exitCode != RESULT_NORMAL) {  
-			char info[4096] = {0};
-			char line[BUF_SZ];
-			close(fds[1]);
-			dup2(fds[0], STDIN_FILENO);  
-			close(fds[0]);
-			while(fgets(line, BUF_SZ, stdin) != NULL) {  
-				strcat(info, line);
-			}
-			printf("%s", info);  
-			
-			return exitCode;
-		} else if (pipeIdx+1 < high){
-			close(fds[1]);
-			dup2(fds[0], STDIN_FILENO);  
-			close(fds[0]);
-			return callCommandWithPipe(pipeIdx+1, high);  
-		}
-	}
-
-	// return result;
 }
 
 int callCommandWithRedi(int low, int high) {  
 	// if (!isCommandExist(commands[low])) {  
 	// 	return ERROR_COMMAND;
 	// }	
-
 
 	int inNum = 0, outNum = 0;
 	char *inFile = NULL, *outFile = NULL;
@@ -351,26 +348,25 @@ int callCommandWithRedi(int low, int high) {
 		return ERROR_MANY_OUT;
 	}
 
-	if (inNum == 1) {
-		FILE* fp = fopen(inFile, "r");
-		if (fp == NULL)  
-			return ERROR_FILE_NOT_EXIST;
-		
-		fclose(fp);
-	}
-	
-
+	// if (inNum == 1) {
+	// }
 	// int result = RESULT_NORMAL;
-	pid_t pid = vfork();
+	pid_t pid = fork();
 	if (pid == -1) {
 		return ERROR_FORK;
 	} else if (pid == 0) {
 
 		if (inNum == 1)
-			freopen(inFile, "r", stdin);
+            FILE* fp = fopen(inFile, "r");
+		    if (fp == NULL)  
+                fclose(fp);
+			    exit(ERROR_FILE_NOT_EXIST);
+            else{
+                fclose(fp);
+			    freopen(inFile, "r", stdin);
+            }
 		if (outNum == 1)
 			freopen(outFile, "w", stdout);
-
 
 		char* comm[BUF_SZ];
 		for (int i=low; i<endIdx; ++i)
@@ -382,11 +378,14 @@ int callCommandWithRedi(int low, int high) {
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
-		int err = WEXITSTATUS(status);  
-
-		if (err) {  
-			printf("\e[31;1mError: %s\n\e[0m", strerror(err));
-            return ERROR_COMMAND;
+		if (WIFEXITED(status)) {
+		    int err = WEXITSTATUS(status);  
+            if(err == ERROR_FILE_NOT_EXIST)
+                return err;
+            else{
+			    fprintf(stderr,"\e[31;1mError: %s\n\e[0m", strerror(err));
+                return ERROR_COMMAND;
+            }
 		}
 	}
 
