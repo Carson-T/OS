@@ -61,7 +61,7 @@ int main() {
 
 	int result = getCurWorkDir();
 	if (ERROR_SYSTEM == result) {
-		fprintf(stderr, "\033[31mError: System error while getting current work directory.\n\033[0m");
+		fprintf(stderr, "\033[42;31;1mError: System error while getting current work directory.\n\033[0m");
 		exit(ERROR_SYSTEM);
 	}
 	getUsername();
@@ -70,7 +70,7 @@ int main() {
 
 	char com[COMSIZE];
 	while (TRUE) {
-		printf("\033[32;1m%s@%s:%s\033[0m$ ", username, hostname,curPath);  
+		printf("\033[41;32;1m%s@%s:%s\033[0m$ ", username, hostname,curPath);  
 
 		fgets(com, COMSIZE, stdin);
 		int len = strlen(com);
@@ -87,21 +87,21 @@ int main() {
 				result = callCd(commandNum);
 				switch (result) {
 					case ERROR_MISS_PARAMETER:
-						fprintf(stderr, "\033[31mError: Miss parameter while using command \"%s\".\n\033[0m"
+						fprintf(stderr, "\033[42;31;1mError: Miss parameter while using command \"%s\".\n\033[0m"
 							, COMMAND_CD);
 						break;
 					case ERROR_WRONG_PARAMETER:
-						fprintf(stderr, "\033[31mError: No such path \"%s\".\n\033[0m", commands[1]);
+						fprintf(stderr, "\033[42;31;1mError: No such path \"%s\".\n\033[0m", commands[1]);
 						break;
 					case ERROR_TOO_MANY_PARAMETER:
-						fprintf(stderr, "\033[31mError: Too many parameters while using command \"%s\".\n\033[0m"
+						fprintf(stderr, "\033[42;31;1mError: Too many parameters while using command \"%s\".\n\033[0m"
 							, COMMAND_CD);
 						break;
 					case RESULT_NORMAL:
 						result = getCurWorkDir();
 						if (ERROR_SYSTEM == result) {
 							fprintf(stderr
-								, "\033[31mError: System error while getting current work directory.\n\033[0m");
+								, "\033[42;31;1mError: System error while getting current work directory.\n\033[0m");
 							exit(ERROR_SYSTEM);
 						} else {
 							break;
@@ -111,27 +111,27 @@ int main() {
 				result = callCommand(commandNum);
 				switch (result) {
 					case ERROR_FORK:
-						fprintf(stderr, "\033[31mError: Fork error.\n\033[0m");
+						fprintf(stderr, "\033[42;31;1mError: Fork error.\n\033[0m");
 						exit(ERROR_FORK);
 					case ERROR_COMMAND:
 						break;
 					case ERROR_MANY_IN:
-						fprintf(stderr, "\033[31mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_IN);
+						fprintf(stderr, "\033[42;31;1mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_IN);
 						break;
 					case ERROR_MANY_OUT:
-						fprintf(stderr, "\033[31mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_OUT);
+						fprintf(stderr, "\033[42;31;1mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_OUT);
 						break;
 					case ERROR_FILE_NOT_EXIST:
-						fprintf(stderr, "\033[31mError: Input redirection file not exist.\n\033[0m");
+						fprintf(stderr, "\033[42;31;1mError: Input redirection file not exist.\n\033[0m");
 						break;
 					case ERROR_PIPE:
-						fprintf(stderr, "\033[31mError: Open pipe error.\n\033[0m");
+						fprintf(stderr, "\033[42;31;1mError: Open pipe error.\n\033[0m");
 						break;
 					case ERROR_MISS_PARAMETER:
-						fprintf(stderr, "\033[31mError: Miss redirect file parameters.\n\033[0m");
+						fprintf(stderr, "\033[42;31;1mError: Miss redirect file parameters.\n\033[0m");
 						break;
 					case ERROR_PIPE_MISS_PARAMETER:
-						fprintf(stderr, "\033[31mError: Miss pipe parameters.\n\033[0m");
+						fprintf(stderr, "\033[42;31;1mError: Miss pipe parameters.\n\033[0m");
 						break;
 				}
 			}
@@ -240,7 +240,7 @@ int callCommand(int commandNum) {
 
     dup2(inFds, STDIN_FILENO);
     dup2(outFds, STDOUT_FILENO);
-    return WEXITSTATUS(status);
+    return result;
 	
 }
 
@@ -372,7 +372,7 @@ int callCommandWithRedi(int low, int high) {
             if(err == ERROR_FILE_NOT_EXIST)
                 return err;
             else{
-			    fprintf(stderr,"\033[31mError: %s\n\033[0m", strerror(err));
+			    fprintf(stderr,"\033[42;31;1mError: %s\n\033[0m", strerror(err));
                 return ERROR_COMMAND;
             }
 		}
