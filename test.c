@@ -13,7 +13,6 @@
 #define FALSE 0
 
 const char* COMMAND_EXIT = "exit";
-const char* COMMAND_HELP = "help";
 const char* COMMAND_CD = "cd";
 const char* COMMAND_IN = "<";
 const char* COMMAND_OUT = ">";
@@ -22,35 +21,33 @@ const char* COMMAND_PIPE = "|";
  
 enum {
 	RESULT_NORMAL,
+
+    ERROR_CWD,
+
 	ERROR_FORK,
+    ERROR_PIPE,
+	ERROR_PIPE_MISS_PARAMETER,
+
+    ERROR_MISS_FILE,
+	ERROR_MANY_REDIR,
+    ERROR_FILE_NOT_EXIST,
 	ERROR_COMMAND,
-	ERROR_WRONG_PARAMETER,
-	ERROR_MISS_PARAMETER,
-	ERROR_TOO_MANY_PARAMETER,
-	ERROR_CD,
-	ERROR_SYSTEM,
-	ERROR_EXIT,
 
-
-	ERROR_MANY_IN,
-	ERROR_MANY_OUT,
-	ERROR_FILE_NOT_EXIST,
 	
-
-	ERROR_PIPE,
-	ERROR_PIPE_MISS_PARAMETER
+	ERROR_WRONG_PATH,
+    ERROR_NUM_PATH
 };
 
 char username[COMSIZE];
 char hostname[COMSIZE];
 char curPath[COMSIZE];
-char commands[COMSIZE][COMSIZE];
+char split_commands[COMSIZE][COMSIZE];
 
-int isCommandExist(const char* command);
+int isCommandExist(const char* inputCom);
 void getUsername();
 void getHostname();
 int getCurWorkDir();
-int splitCommands(char command[COMSIZE]);
+int splitCommands(char inputCom[COMSIZE]);
 int callExit();
 int callCommand(int commandNum);
 int callCommandWithPipe(int low, int high);
@@ -60,49 +57,44 @@ int callCd(int commandNum);
 int main() {
 
 	int result = getCurWorkDir();
-	if (ERROR_SYSTEM == result) {
+	if (ERROR_CWD == result) {
 		fprintf(stderr, "\033[31;1mError: System error while getting current work directory.\n\033[0m");
-		exit(ERROR_SYSTEM);
+		exit(-1);
 	}
 	getUsername();
 	getHostname();
 
 
-	char com[COMSIZE];
+	char inputCom[COMSIZE];
 	while (TRUE) {
 		printf("\033[41;32;1m%s@%s:%s\033[0m$ ", username, hostname,curPath);  
 
-		fgets(com, COMSIZE, stdin);
-		int len = strlen(com);
+		fgets(inputCom, COMSIZE, stdin);
+		int len = strlen(inputCom);
 		if (len != COMSIZE) {
-			com[len-1] = '\0';
+			inputCom[len-1] = '\0';
 		}
 
-		int commandNum = splitCommands(com);
+		int commandNum = splitCommands(inputCom);
 		
 		if (commandNum != 0) {  
-			if (strcmp(commands[0], COMMAND_EXIT) == 0) {  
+			if (strcmp(split_commands[0], COMMAND_EXIT) == 0) {  
 				exit(0);
-			} else if (strcmp(commands[0], COMMAND_CD) == 0) {  
+			} else if (strcmp(split_commands[0], COMMAND_CD) == 0) {  
 				result = callCd(commandNum);
 				switch (result) {
-					case ERROR_MISS_PARAMETER:
-						fprintf(stderr, "\033[31;1mError: Miss parameter while using command \"%s\".\n\033[0m"
+					case ERROR_NUM_PATH:
+						fprintf(stderr, "\033[31;1mError: Wrong numbers of parameter while using cd \"%s\".\n\033[0m"
 							, COMMAND_CD);
 						break;
-					case ERROR_WRONG_PARAMETER:
-						fprintf(stderr, "\033[31;1mError: No such path \"%s\".\n\033[0m", commands[1]);
-						break;
-					case ERROR_TOO_MANY_PARAMETER:
-						fprintf(stderr, "\033[31;1mError: Too many parameters while using command \"%s\".\n\033[0m"
-							, COMMAND_CD);
+					case ERROR_WRONG_PATH:
+						fprintf(stderr, "\033[31;1mError: No such path \"%s\".\n\033[0m", split_commands[1]);
 						break;
 					case RESULT_NORMAL:
 						result = getCurWorkDir();
-						if (ERROR_SYSTEM == result) {
-							fprintf(stderr
-								, "\033[31;1mError: System error while getting current work directory.\n\033[0m");
-							exit(ERROR_SYSTEM);
+						if (result == ERROR_CWD) {
+							fprintf(stderr,"\033[31;1mError: System error while getting current work directory.\n\033[0m");
+							exit(-1);
 						} else {
 							break;
 						}
@@ -113,25 +105,21 @@ int main() {
 					case ERROR_FORK:
 						fprintf(stderr, "\033[31;1mError: Fork error.\n\033[0m");
 						exit(ERROR_FORK);
-					case ERROR_COMMAND:
-						break;
-					case ERROR_MANY_IN:
-						fprintf(stderr, "\033[31;1mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_IN);
-						break;
-					case ERROR_MANY_OUT:
-						fprintf(stderr, "\033[31;1mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_OUT);
-						break;
-					case ERROR_FILE_NOT_EXIST:
-						fprintf(stderr, "\033[31;1mError: Input redirection file not exist.\n\033[0m");
-						break;
 					case ERROR_PIPE:
 						fprintf(stderr, "\033[31;1mError: Open pipe error.\n\033[0m");
 						break;
-					case ERROR_MISS_PARAMETER:
-						fprintf(stderr, "\033[31;1mError: Miss redirect file parameters.\n\033[0m");
-						break;
 					case ERROR_PIPE_MISS_PARAMETER:
 						fprintf(stderr, "\033[31;1mError: Miss pipe parameters.\n\033[0m");
+						break;
+
+					case ERROR_MISS_FILE:
+						fprintf(stderr, "\033[31;1mError: Miss redirect file parameters.\n\033[0m");
+						break;
+					case ERROR_MANY_REDIR:
+						fprintf(stderr, "\033[31;1mError: Too many redirection symbol \"%s\".\n\033[0m", COMMAND_IN);
+						break;
+					case ERROR_FILE_NOT_EXIST:
+						fprintf(stderr, "\033[31;1mError: Input redirection file is not exist.\n\033[0m");
 						break;
 				}
 			}
@@ -139,8 +127,8 @@ int main() {
 	}
 }
 
-// int isCommandExist(const char* command) {  
-// 	if (command == NULL || strlen(command) == 0) return FALSE;
+// int isCommandExist(const char* inputCom) {  
+// 	if (inputCom == NULL || strlen(inputCom) == 0) return FALSE;
 
 // 	int result = TRUE;
 	
@@ -162,7 +150,7 @@ int main() {
 // 			close(fds[1]);
 
 // 			char tmp[COMSIZE];
-// 			sprintf(tmp, "command -v %s", command);
+// 			sprintf(tmp, "inputCom -v %s", inputCom);
 // 			system(tmp);
 // 			exit(1);
 // 		} else {
@@ -195,30 +183,30 @@ void getHostname() {
 }
 
 int getCurWorkDir() {  
-	char* result = getcwd(curPath, COMSIZE);
-	if (result == NULL)
-		return ERROR_SYSTEM;
+	char* dir = getcwd(curPath, COMSIZE);
+	if (dir == NULL)
+		return ERROR_CWD;
 	else return RESULT_NORMAL;
 }
 
-int splitCommands(char command[COMSIZE]) {  
+int splitCommands(char inputCom[COMSIZE]) {  
 	int num = 0;
 	int i, j;
-	int len = strlen(command);
+	int len = strlen(inputCom);
 
 	for (i=0, j=0; i<len; ++i) {
-		if (command[i] != ' ') {
-			commands[num][j++] = command[i];
+		if (inputCom[i] != ' ') {
+			split_commands[num][j++] = inputCom[i];
 		} else {
 			if (j != 0) {
-				commands[num][j] = '\0';
+				split_commands[num][j] = '\0';
 				++num;
 				j = 0;
 			}
 		}
 	}
 	if (j != 0) {
-		commands[num][j] = '\0';
+		split_commands[num][j] = '\0';
 		++num;
 	}
 
@@ -233,13 +221,13 @@ int splitCommands(char command[COMSIZE]) {
 // }
 
 int callCommand(int commandNum) {  
-    int inFds = dup(STDIN_FILENO);
-    int outFds = dup(STDOUT_FILENO);
+    int inFile = dup(STDIN_FILENO);
+    int outFile = dup(STDOUT_FILENO);
 
     int result = callCommandWithPipe(0, commandNum);
 
-    dup2(inFds, STDIN_FILENO);
-    dup2(outFds, STDOUT_FILENO);
+    dup2(inFile, STDIN_FILENO);
+    dup2(outFile, STDOUT_FILENO);
     return result;
 	
 }
@@ -248,8 +236,8 @@ int callCommandWithPipe(int low, int high) {
 	// if (low >= high) return RESULT_NORMAL;
 
 	int pipeIdx = -1;
-	for (int i=low; i<high; ++i) {
-		if (strcmp(commands[i], COMMAND_PIPE) == 0) {
+	for (int i=low; i<high; i++) {
+		if (strcmp(split_commands[i], COMMAND_PIPE) == 0) {
 			pipeIdx = i;
 			break;
 		}
@@ -282,14 +270,13 @@ int callCommandWithPipe(int low, int high) {
             int exitCode = WEXITSTATUS(status);
             
             if (exitCode != RESULT_NORMAL) {  
-                char line[COMSIZE];
+                char errorContents[COMSIZE];
                 close(fds[1]);
                 dup2(fds[0], STDIN_FILENO);  
                 close(fds[0]);
-                while(fgets(line, COMSIZE, stdin) != NULL) {  
-                    fprintf(stderr,"%s", line);  
+                while(fgets(errorContents, COMSIZE, stdin) != NULL) {  
+                    fprintf(stderr,"%s", errorContents);  
                 }
-
                 return exitCode;
             } else if (pipeIdx+1 < high){
                 close(fds[1]);
@@ -303,47 +290,41 @@ int callCommandWithPipe(int low, int high) {
 }
 
 int callCommandWithRedi(int low, int high) {  
-	// if (!isCommandExist(commands[low])) {  
+	// if (!isCommandExist(split_commands[low])) {  
 	// 	return ERROR_COMMAND;
 	// }	
 
-	int inNum = 0, outNum = 0;
+	int inFileNum = 0, outFileNum = 0;
 	char *inFile = NULL, *outFile = NULL;
 	int endIdx = high;  
 
 	for (int i=low; i<high; ++i) {
-		if (strcmp(commands[i], COMMAND_IN) == 0) {  
-			++inNum;
+		if (strcmp(split_commands[i], COMMAND_IN) == 0) {  
+			inFileNum++;
 			if (i < high-1)
-				inFile = commands[i+1];
-			else return ERROR_MISS_PARAMETER;  
+				inFile = split_commands[i+1];
+			else return ERROR_MISS_FILE;  
 
 			if (endIdx == high) endIdx = i;
-		} else if (strcmp(commands[i], COMMAND_OUT) == 0) {  
-			++outNum;
+		} else if (strcmp(split_commands[i], COMMAND_OUT) == 0) {  
+			outFileNum++;
 			if (i < high-1)
-				outFile = commands[i+1];
-			else return ERROR_MISS_PARAMETER;  
+				outFile = split_commands[i+1];
+			else return ERROR_MISS_FILE;  
 				
 			if (endIdx == high) endIdx = i;
 		}
 	}
 
-	if (inNum > 1) {  
-		return ERROR_MANY_IN;
-	} else if (outNum > 1) {  
-		return ERROR_MANY_OUT;
-	}
+	if (inFileNum > 1 || outFileNum > 1)
+		return ERROR_MANY_REDIR;
 
-	// if (inNum == 1) {
-	// }
-	// int result = RESULT_NORMAL;
 	pid_t pid = fork();
 	if (pid == -1) {
 		return ERROR_FORK;
 	} else if (pid == 0) {
 
-		if (inNum == 1){
+		if (inFileNum == 1){
             FILE* fp = fopen(inFile, "r");
 		    if (fp == NULL){
                 fclose(fp);
@@ -354,12 +335,12 @@ int callCommandWithRedi(int low, int high) {
 			    freopen(inFile, "r", stdin);
             }
         }
-		if (outNum == 1)
+		if (outFileNum == 1)
 			freopen(outFile, "w", stdout);
 
 		char* comm[COMSIZE];
 		for (int i=low; i<endIdx; ++i)
-			comm[i] = commands[i];
+			comm[i] = split_commands[i];
 		comm[endIdx] = NULL;
 
 		execvp(comm[low], comm+low);
@@ -382,16 +363,12 @@ int callCommandWithRedi(int low, int high) {
 }
 
 int callCd(int commandNum) {  
-	int result = RESULT_NORMAL;
-
-	if (commandNum < 2) {
-		result = ERROR_MISS_PARAMETER;
-	} else if (commandNum > 2) {
-		result = ERROR_TOO_MANY_PARAMETER;
-	} else {
-		int ret = chdir(commands[1]);
-		if (ret) result = ERROR_WRONG_PARAMETER;
+	if (commandNum == 2) {
+		int a = chdir(split_commands[1]);
+		if (a)
+            return ERROR_WRONG_PATH;
+        return RESULT_NORMAL
 	}
-
-	return result;
+    else
+		return ERROR_NUM_PATH;
 }
