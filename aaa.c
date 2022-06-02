@@ -44,12 +44,17 @@ int splitCommands(char command[BUF_SZ]) {
 
 //     }
 // }
-int a();
+
 int main(){
-    int x = 1;
-    a();
-    return 0;
-}
-int a(){
-    printf("%d",x);
+    char* s[100] = {"qasdassdsw","wes"};
+    char* a;
+    a = s[0];
+    for(int i=0;i<2;i++){
+        printf("%s\n",a);
+        printf("%p\n",a);
+        printf("%p\n",s[0]);
+        printf("%p\n",s[1]);
+
+        a++;
+    }
 }

@@ -326,10 +326,8 @@ int callCommandWithRedi(int low, int high) {
 
 		if (inFileNum == 1){
             FILE* fp = fopen(inFile, "r");
-		    if (fp == NULL){
-                fclose(fp);
+		    if (fp == NULL)
 			    exit(ERROR_FILE_NOT_EXIST);
-            }
             else{
                 fclose(fp);
 			    freopen(inFile, "r", stdin);
@@ -367,7 +365,7 @@ int callCd(int commandNum) {
 		int a = chdir(split_commands[1]);
 		if (a)
             return ERROR_WRONG_PATH;
-        return RESULT_NORMAL
+        return RESULT_NORMAL;
 	}
     else
 		return ERROR_NUM_PATH;
