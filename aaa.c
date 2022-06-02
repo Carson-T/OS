@@ -1,4 +1,6 @@
 #include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
 #include<unistd.h>
 #define BUF_SZ 256
 char commands[BUF_SZ][BUF_SZ];
@@ -33,23 +35,21 @@ int splitCommands(char command[BUF_SZ]) {
 	return 0;
 }
 
-int a(){
-    pid_t pid = fork();
-    if(pid == 0){
-        exit(0);
-    }
-    else{
-        
-    }
-}
+// int a(){
+//     pid_t pid = fork();
+//     if(pid == 0){
+//         exit(0);
+//     }
+//     else{
+
+//     }
+// }
+int a();
 int main(){
-    char s[100];
-    // int a = splitCommands(s);
-    // printf("%s",commands[4]);
-    // return 0;
-    fgets(s,100,stdin);
-    if(AAA==0){
-        printf("%d",strcmp(s,""));
-    }
+    int x = 1;
+    a();
     return 0;
+}
+int a(){
+    printf("%d",x);
 }
