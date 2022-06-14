@@ -20,7 +20,7 @@ const char* COMMAND_PIPE = "|";
 
  
 enum {
-	RESULT_NORMAL,
+	RESULT_NORMAL=132,
 
     ERROR_CWD,
 
