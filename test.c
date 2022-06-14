@@ -20,7 +20,7 @@ const char* COMMAND_PIPE = "|";
 
  
 enum {
-	RESULT_NORMAL,
+	RESULT_NORMAL=132,
 
     ERROR_CWD,
 
@@ -30,9 +30,8 @@ enum {
 
     ERROR_MISS_FILE,
 	ERROR_MANY_REDIR,
-    ERROR_FILE_NOT_EXIST,
 	ERROR_COMMAND,
-
+	ERROR_FILE_NOT_EXIST,
 	
 	ERROR_WRONG_PATH,
     ERROR_NUM_PATH
@@ -342,11 +341,13 @@ int callCommandWithRedi(int low, int high) {
 		comm[endIdx] = NULL;
 
 		execvp(comm[low], comm+low);
+		fprintf(stderr,"qweqweqwe\n");
 		exit(errno);  
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
 		int err = WEXITSTATUS(status);  
+		fprintf(stderr,"err %d\n",err);
         if(err){
             if(err == ERROR_FILE_NOT_EXIST)
                 return err;
