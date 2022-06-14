@@ -46,15 +46,7 @@ int splitCommands(char command[BUF_SZ]) {
 // }
 
 int main(){
-    char* s[100] = {"qasdassdsw","wes"};
-    char* a;
-    a = s[0];
-    for(int i=0;i<2;i++){
-        printf("%s\n",a);
-        printf("%p\n",a);
-        printf("%p\n",s[0]);
-        printf("%p\n",s[1]);
-
-        a++;
+    if ('\0'==NULL){
+        printf("%d",'\0');
     }
 }
