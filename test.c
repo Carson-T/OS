@@ -42,12 +42,10 @@ char hostname[COMSIZE];
 char curPath[COMSIZE];
 char split_commands[COMSIZE][COMSIZE];
 
-int isCommandExist(const char* inputCom);
 void getUsername();
 void getHostname();
 int getCurWorkDir();
 int splitCommands(char inputCom[COMSIZE]);
-int callExit();
 int callCommand(int commandNum);
 int callCommandWithPipe(int low, int high);
 int callCommandWithRedi(int low, int high);
@@ -242,7 +240,6 @@ int callCommandWithPipe(int low, int high) {
 		}
 	}
 
-
 	if (pipeIdx == -1) {  
 		return callCommandWithRedi(low, high);
 	}else if (pipeIdx+1 == high) {  
@@ -277,9 +274,9 @@ int callCommandWithPipe(int low, int high) {
                     fprintf(stderr,"%s", errorContents);  
                 }
                 return exitCode;
-            } else if (pipeIdx+1 < high){
+            } else{
                 close(fds[1]);
-                dup2(fds[0], STDIN_FILENO);  
+                dup2(fds[0], STDIN_FILENO);
                 close(fds[0]);
                 return callCommandWithPipe(pipeIdx+1, high);  
             }
