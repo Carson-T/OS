@@ -347,7 +347,6 @@ int callCommandWithRedi(int low, int high) {
 		int status;
 		waitpid(pid, &status, 0);
 		int err = WEXITSTATUS(status);  
-		fprintf(stderr,"err %d\n",err);
         if(err){
             if(err == ERROR_FILE_NOT_EXIST)
                 return err;
