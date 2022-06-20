@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<semaphore.h>
+#include<unistd.h>
 #include<pthread.h>
 
 #define NumOf_Service_Window 10  //服务窗口个数
