@@ -82,7 +82,7 @@ int main() {
 				result = callCd(commandNum);
 				switch (result) {
 					case ERROR_NUM_PATH:
-						fprintf(stderr, "\033[31;1mError: Wrong numbers of parameter while using cd \"%s\".\n\033[0m"
+						fprintf(stderr, "\033[31;1mError: Wrong numbers of parameter while using \"%s\".\n\033[0m"
 							, COMMAND_CD);
 						break;
 					case ERROR_WRONG_PATH:
