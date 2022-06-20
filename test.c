@@ -125,51 +125,6 @@ int main() {
 	}
 }
 
-// int isCommandExist(const char* inputCom) {  
-// 	if (inputCom == NULL || strlen(inputCom) == 0) return FALSE;
-
-// 	int result = TRUE;
-	
-// 	int fds[2];
-// 	if (pipe(fds) == -1) {
-// 		result = FALSE;
-// 	} else {
-
-// 		int inFd = dup(STDIN_FILENO);
-// 		int outFd = dup(STDOUT_FILENO);
-
-// 		pid_t pid = vfork();
-// 		if (pid == -1) {
-// 			result = FALSE;
-// 		} else if (pid == 0) {
-
-// 			close(fds[0]);
-// 			dup2(fds[1], STDOUT_FILENO);
-// 			close(fds[1]);
-
-// 			char tmp[COMSIZE];
-// 			sprintf(tmp, "inputCom -v %s", inputCom);
-// 			system(tmp);
-// 			exit(1);
-// 		} else {
-// 			waitpid(pid, NULL, 0);
-
-// 			close(fds[1]);
-// 			dup2(fds[0], STDIN_FILENO);
-// 			close(fds[0]);
-
-// 			if (getchar() == EOF) {  
-// 				result = FALSE;
-// 			}
-			
-
-// 			dup2(inFd, STDIN_FILENO);
-// 			dup2(outFd, STDOUT_FILENO);
-// 		}
-// 	}
-
-// 	return result;
-// }
 
 void getUsername() {  
 	struct passwd* pwd = getpwuid(getuid());
@@ -211,12 +166,6 @@ int splitCommands(char inputCom[COMSIZE]) {
 	return num;
 }
 
-// int callExit() {  
-// 	pid_t pid = getpid();
-// 	if (kill(pid, SIGTERM) == -1) 
-// 		return ERROR_EXIT;
-// 	else return RESULT_NORMAL;
-// }
 
 int callCommand(int commandNum) {  
     int inFile = dup(STDIN_FILENO);
@@ -231,120 +180,117 @@ int callCommand(int commandNum) {
 }
 
 int callCommandWithPipe(int low, int high) {  
-	// if (low >= high) return RESULT_NORMAL;
 
 	int pipeIdx = -1;
-	for (int i=low; i<high; i++) {
+	for (int i=low; i<high; i++) {   //找到第一个 | 的索引
 		if (strcmp(split_commands[i], COMMAND_PIPE) == 0) {
 			pipeIdx = i;
 			break;
 		}
 	}
 
-	if (pipeIdx == -1) {  
+	if (pipeIdx == -1) {     //没有管道
 		return callCommandWithRedi(low, high);
-	}else if (pipeIdx+1 == high) {  
+	}else if (pipeIdx+1 == high) {    // | 在最后，错误，退出
 		return ERROR_PIPE_MISS_PARAMETER;
     } 
     else if (pipeIdx+1 < high){
         int fds[2];
-        if (pipe(fds) == -1) {
+        if (pipe(fds) == -1) {    //创建pipe
             return ERROR_PIPE;
         }
-        // int result = RESULT_NORMAL;
-        pid_t pid =  fork();
+        pid_t pid =  fork();   //创建子进程
         if (pid == -1) {
             return ERROR_FORK;
         } else if (pid == 0) {  
             close(fds[0]);
-            dup2(fds[1], STDOUT_FILENO);  
+            dup2(fds[1], STDOUT_FILENO);      //子进程中更改stdout到pipe写端口
             close(fds[1]);
             
-            exit(callCommandWithRedi(low, pipeIdx));
-        } else {  
+            exit(callCommandWithRedi(low, pipeIdx));   //执行 | 之前的命令(low - pipeIdx)
+        } else {    //父进程
             int status;
             waitpid(pid, &status, 0);
             int exitCode = WEXITSTATUS(status);
             
-            if (exitCode != RESULT_NORMAL) {  
-                char errorContents[COMSIZE];
+            if (exitCode != RESULT_NORMAL) {    //子进程执行出错
+                char errorContents[COMSIZE] = {0};
+                char line[BUF_SZ];
                 close(fds[1]);
-                dup2(fds[0], STDIN_FILENO);  
+                dup2(fds[0], STDIN_FILENO);  //改stdin到pipe读端口，获取输出的错误信息
                 close(fds[0]);
-                while(fgets(errorContents, COMSIZE, stdin) != NULL) {  
-                    fprintf(stderr,"%s", errorContents);  
+                while(fgets(line, COMSIZE, stdin) != NULL) {  
+                    strcat(errorContents, line);    //打印错误
                 }
+                fprintf(stderr,"%s",errorContents);
                 return exitCode;
-            } else{
+            } else{  //子进程无错
                 close(fds[1]);
-                dup2(fds[0], STDIN_FILENO);
+                dup2(fds[0], STDIN_FILENO);    //将stdin改到pipe读端口
                 close(fds[0]);
-                return callCommandWithPipe(pipeIdx+1, high);  
+                return callCommandWithPipe(pipeIdx+1, high);  //递归调用，处理 | 后的内容(pipe+1 - high)
             }
         }
 	}
 
 }
 
-int callCommandWithRedi(int low, int high) {  
-	// if (!isCommandExist(split_commands[low])) {  
-	// 	return ERROR_COMMAND;
-	// }	
+int callCommandWithRedi(int low, int high) {  	
 
 	int inFileNum = 0, outFileNum = 0;
 	char *inFile = NULL, *outFile = NULL;
 	int endIdx = high;  
 
 	for (int i=low; i<high; ++i) {
-		if (strcmp(split_commands[i], COMMAND_IN) == 0) {  
+		if (strcmp(split_commands[i], COMMAND_IN) == 0) {  //判断是否 <
 			inFileNum++;
 			if (i < high-1)
 				inFile = split_commands[i+1];
-			else return ERROR_MISS_FILE;  
+			else return ERROR_MISS_FILE;   // < 在末尾，错误，退出
 
 			if (endIdx == high) endIdx = i;
-		} else if (strcmp(split_commands[i], COMMAND_OUT) == 0) {  
+		} else if (strcmp(split_commands[i], COMMAND_OUT) == 0) {   //判断是否 >
 			outFileNum++;
 			if (i < high-1)
 				outFile = split_commands[i+1];
-			else return ERROR_MISS_FILE;  
+			else return ERROR_MISS_FILE;   // > 在末尾，错误，退出
 				
-			if (endIdx == high) endIdx = i;
+			if (endIdx == high) endIdx = i; 
 		}
 	}
 
-	if (inFileNum > 1 || outFileNum > 1)
+	if (inFileNum > 1 || outFileNum > 1)    //暂不支持多重重定向，最多一个in一个out
 		return ERROR_MANY_REDIR;
 
-	pid_t pid = fork();
+	pid_t pid = fork();     
 	if (pid == -1) {
 		return ERROR_FORK;
 	} else if (pid == 0) {
 
-		if (inFileNum == 1){
+		if (inFileNum == 1){  //输入重定向
             FILE* fp = fopen(inFile, "r");
 		    if (fp == NULL)
 			    exit(ERROR_FILE_NOT_EXIST);
             else{
                 fclose(fp);
-			    freopen(inFile, "r", stdin);
+			    freopen(inFile, "r", stdin); //将freopen将stdin改到文件
             }
         }
 		if (outFileNum == 1)
-			freopen(outFile, "w", stdout);
+			freopen(outFile, "w", stdout); //将stdout改到文件
 
 		char* comm[COMSIZE];
 		for (int i=low; i<endIdx; ++i)
 			comm[i] = split_commands[i];
-		comm[endIdx] = NULL;
+		comm[endIdx] = NULL;  //截取需要执行的命令字符串
 
-		execvp(comm[low], comm+low);
-		exit(errno);  
+		execvp(comm[low], comm+low);  //执行命令
+		exit(errno);  //若execvp执行成功，会接管进程，否则便会执行到这，表示命令执行失败
 	} else {
 		int status;
 		waitpid(pid, &status, 0);
 		int err = WEXITSTATUS(status);  
-        if(err){
+        if(err){  //判断子进程退出码
             if(err == ERROR_FILE_NOT_EXIST)
                 return err;
             else{
