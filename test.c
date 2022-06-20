@@ -168,23 +168,16 @@ int splitCommands(char inputCom[COMSIZE]) {
 
 
 int callCommand(int commandNum) {  
-    pid_t pid = fork();
-	if (pid == -1) {
-		return ERROR_FORK;
-	} else if (pid == 0) {
-        int inFile = dup(STDIN_FILENO);
-        int outFile = dup(STDOUT_FILENO);
 
-        int result = callCommandWithPipe(0, commandNum);
+    int inFile = dup(STDIN_FILENO);
+    int outFile = dup(STDOUT_FILENO);
 
-        dup2(inFile, STDIN_FILENO);
-        dup2(outFile, STDOUT_FILENO);
-        exit(result);
-    } else {
-		int status;
-		waitpid(pid, &status, 0);
-		return WEXITSTATUS(status);
-	}
+    int result = callCommandWithPipe(0, commandNum);
+
+    dup2(inFile, STDIN_FILENO);
+    dup2(outFile, STDOUT_FILENO);
+    return result;
+
 	
 }
 
@@ -222,22 +215,9 @@ int callCommandWithPipe(int low, int high) {
             waitpid(pid, &status, 0);
             int exitCode = WEXITSTATUS(status);
             
-            if (exitCode != RESULT_NORMAL) {    //子进程执行出错
-                int inFile = dup(STDIN_FILENO);
-                int outFile = dup(STDOUT_FILENO);
-
-                char errorContents[1024];
-                // char line[COMSIZE];
-                close(fds[1]);
-                dup2(fds[0], STDIN_FILENO);  //改stdin到pipe读端口，获取输出的错误信息
-                close(fds[0]);
-                while(fgets(errorContents, COMSIZE, stdin) != NULL) {  
-                    fprintf(stderr,"%s",errorContents);    //打印错误
-                }
-                dup2(inFile, STDIN_FILENO);
-                dup2(outFile, STDOUT_FILENO);
+            if (exitCode != RESULT_NORMAL)     //子进程执行出错
                 return exitCode;
-            }else{  //子进程无错
+            else{  //子进程无错
                 close(fds[1]);
                 dup2(fds[0], STDIN_FILENO);    //将stdin改到pipe读端口
                 close(fds[0]);
