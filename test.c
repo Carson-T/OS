@@ -223,15 +223,14 @@ int callCommandWithPipe(int low, int high) {
             int exitCode = WEXITSTATUS(status);
             
             if (exitCode != RESULT_NORMAL) {    //子进程执行出错
-                char errorContents[1024] = {0};
-                char line[COMSIZE];
+                char errorContents[1024];
+                // char line[COMSIZE];
                 close(fds[1]);
                 dup2(fds[0], STDIN_FILENO);  //改stdin到pipe读端口，获取输出的错误信息
                 close(fds[0]);
-                while(fgets(line, COMSIZE, stdin) != NULL) {  
-                    strcat(errorContents, line);    //打印错误
+                while(fgets(errorContents, COMSIZE, stdin) != NULL) {  
+                    fprintf(stderr,"%s",errorContents);    //打印错误
                 }
-                fprintf(stderr,"%s",errorContents);
                 return exitCode;
             } else{  //子进程无错
                 close(fds[1]);
