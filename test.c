@@ -214,8 +214,8 @@ int callCommandWithPipe(int low, int high) {
             int exitCode = WEXITSTATUS(status);
             
             if (exitCode != RESULT_NORMAL) {    //子进程执行出错
-                char errorContents[COMSIZE] = {0};
-                char line[BUF_SZ];
+                char errorContents[1024] = {0};
+                char line[COMSIZE];
                 close(fds[1]);
                 dup2(fds[0], STDIN_FILENO);  //改stdin到pipe读端口，获取输出的错误信息
                 close(fds[0]);
