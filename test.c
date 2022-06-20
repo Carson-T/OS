@@ -168,14 +168,23 @@ int splitCommands(char inputCom[COMSIZE]) {
 
 
 int callCommand(int commandNum) {  
-    int inFile = dup(STDIN_FILENO);
-    int outFile = dup(STDOUT_FILENO);
+    pid_t pid = fork();
+	if (pid == -1) {
+		return ERROR_FORK;
+	} else if (pid == 0) {
+        int inFile = dup(STDIN_FILENO);
+        int outFile = dup(STDOUT_FILENO);
 
-    int result = callCommandWithPipe(0, commandNum);
+        int result = callCommandWithPipe(0, commandNum);
 
-    dup2(inFile, STDIN_FILENO);
-    dup2(outFile, STDOUT_FILENO);
-    return result;
+        dup2(inFile, STDIN_FILENO);
+        dup2(outFile, STDOUT_FILENO);
+        exit(result);
+    } else {
+		int status;
+		waitpid(pid, &status, 0);
+		return WEXITSTATUS(status);
+	}
 	
 }
 
